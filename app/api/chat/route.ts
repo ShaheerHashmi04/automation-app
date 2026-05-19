@@ -1,7 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { NextRequest } from "next/server";
 
-const systemPrompt = `You are a friendly business automation consultant. 
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+const systemPrompt = `You are a friendly business automation consultant.
 Your job is to help small business owners automate repetitive tasks.
 Follow these steps in order:
 1. Ask what their business does (one sentence)
@@ -13,44 +17,36 @@ Ask only ONE question at a time. Keep responses short and friendly.
 When you have enough info, write the automation plan between <automation> and </automation> tags.`;
 
 interface Message {
-  role: string;
+  role: "user" | "assistant";
   content: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return Response.json({ text: "Missing API key" }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
     const { messages }: { messages: Message[] } = await request.json();
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction: systemPrompt,
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ],
+      max_tokens: 1000,
     });
 
-    // Filter history to only include messages after the first user message
-    // and exclude the last message (which we send separately)
-    const allButLast = messages.slice(0, -1);
-    const firstUserIndex = allButLast.findIndex((m) => m.role === "user");
-    const validHistory = firstUserIndex === -1 ? [] : allButLast.slice(firstUserIndex);
-
-    const history = validHistory.map((msg: Message) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
-
-    const chat = model.startChat({ history });
-    const lastMessage = messages[messages.length - 1].content;
-    const result = await chat.sendMessage(lastMessage);
-    const text = result.response.text();
-
+    const text = response.choices[0]?.message?.content ?? "Sorry, something went wrong.";
     return Response.json({ text });
+
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("Groq API error:", error);
     return Response.json({ text: "Sorry, something went wrong. Please try again." });
   }
 }
