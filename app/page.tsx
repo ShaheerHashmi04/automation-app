@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase";
 
 const industries = [
   "Bakeries", "E-commerce stores", "Freelancers", "Restaurants",
@@ -87,8 +88,18 @@ const defaultPlan = plans["Bakeries"];
 
 export default function Home() {
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const currentPlan = selectedIndustry ? plans[selectedIndustry] : defaultPlan;
   const planLabel = selectedIndustry ?? "Bakeries";
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkUser();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
@@ -120,10 +131,10 @@ export default function Home() {
             <span className="text-sm font-medium text-white">AutoConsult</span>
           </Link>
           <Link
-            href="/chat"
+            href={isLoggedIn ? "/chat" : "/auth/login"}
             className="text-sm px-4 py-2 rounded-xl bg-white text-gray-900 font-medium hover:bg-gray-100 transition-colors"
           >
-            Get started
+            {isLoggedIn ? "Go to chat" : "Get started"}
           </Link>
         </nav>
 
@@ -139,10 +150,10 @@ export default function Home() {
             Tell our AI about your business and walk away with a custom step-by-step automation plan — no technical knowledge required.
           </p>
           <Link
-            href="/chat"
+            href={isLoggedIn ? "/chat" : "/auth/login"}
             className="flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-100 transition-colors mb-3"
           >
-            Build my automation plan
+            {isLoggedIn ? "Continue to chat" : "Build my automation plan"}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 7H13M13 7L8 2M13 7L8 12" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -369,7 +380,7 @@ export default function Home() {
             <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
               <p className="text-xs text-gray-400">Example output — yours will be tailored to your business</p>
               <Link
-                href="/chat"
+                href={isLoggedIn ? "/chat" : "/auth/login"}
                 className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all"
               >
                 Get mine
@@ -389,10 +400,11 @@ export default function Home() {
           Join other small businesses automating their workflows with AutoConsult.
         </p>
         <Link
-          href="/chat"
+          href={isLoggedIn ? "/chat" : "/auth/login"}
           className="flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-100 transition-colors"
         >
-          Get started for free
+          {isLoggedIn ? "Continue to chat" : "Get started for free"}
+          
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M1 7H13M13 7L8 2M13 7L8 12" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -412,4 +424,3 @@ export default function Home() {
     </div>
   );
 }
-
