@@ -1,6 +1,6 @@
 # AutoConsult — AI Business Automation Consultant
 
-A full-stack AI consultant that helps small business owners identify and automate repetitive tasks through natural conversation. Sign up, chat with the AI, and walk away with a downloadable custom automation plan.
+A full-stack AI consultant that helps small business owners identify and automate repetitive tasks through natural conversation. Sign up, chat with the AI, and walk away with a downloadable custom automation plan — all conversations saved to your account.
 
 🔗 **[Try it live → automation-app-umber.vercel.app](https://automation-app-umber.vercel.app/)**
 
@@ -11,7 +11,7 @@ A full-stack AI consultant that helps small business owners identify and automat
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
 
-**Features:** Conversational AI via Groq, user auth with Supabase, persistent chat history, multiple conversations, downloadable automation plans, protected routes, deployed on Vercel.
+**Features:** Conversational AI via Groq, full user authentication with Supabase, persistent multi-session chat history, downloadable automation plans, protected routes via Next.js middleware, deployed on Vercel.
 
 **Run locally:** Clone the repo, run `npm install`, add your `GROQ_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`, then run `npm run dev`.
 
@@ -21,15 +21,17 @@ app/
 ├── page.tsx              # Landing page
 ├── layout.tsx            # Root layout
 ├── auth/
-│   └── login/
-│       └── page.tsx      # Login and signup page
+│   ├── login/
+│   │   └── page.tsx      # Login, signup and forgot password
+│   └── reset-password/
+│       └── page.tsx      # Password reset page
 ├── chat/
 │   └── page.tsx          # Chat interface with history sidebar
 └── api/
     └── chat/
         └── route.ts      # Groq API integration
 lib/
-└── supabase.ts           # Supabase client
+└── supabase.ts           # Supabase browser client
 middleware.ts             # Auth route protection
 ```
 
