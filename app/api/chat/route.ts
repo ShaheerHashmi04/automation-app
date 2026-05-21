@@ -32,12 +32,19 @@ Rules:
 - When you are ready to deliver the plan, write it between <automation> and </automation> tags
 - The plan should be specific to their exact tools and situation, not generic
 
-IMPORTANT: When you write the automation plan, also include these hidden tags with extracted info:
-<business_name>The name or type of their business</business_name>
-<manual_task>The main manual task they want to automate in one sentence</manual_task>
+IMPORTANT: When you write the automation plan, structure it like this — the automation tags come FIRST with numbered steps on separate lines, then the metadata tags OUTSIDE and AFTER the automation block:
+
+<automation>
+1. First step here
+2. Second step here
+3. Third step here
+4. Fourth step here
+</automation>
+<business_name>The name of their business</business_name>
+<manual_task>The main manual task in one sentence</manual_task>
 <tools>Comma separated list of tools they mentioned</tools>
 
-These tags will be used to personalize their PDF report.`;
+Never put the metadata tags inside the automation block. Always use numbered steps on separate lines inside the automation block.`;
 
 interface Message {
   role: "user" | "assistant";
