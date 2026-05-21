@@ -1,6 +1,6 @@
 # AutoConsult — AI Business Automation Consultant
 
-A full-stack AI consultant that helps small business owners identify and automate repetitive tasks through natural conversation. Sign up, chat with the AI, and walk away with a downloadable custom automation plan — all conversations saved to your account.
+A full-stack AI consultant that helps small business owners identify and automate repetitive tasks through natural conversation. Sign up, fill out your business profile, chat with the AI, and walk away with a personalized downloadable PDF automation plan — all conversations saved to your account.
 
 🔗 **[Try it live → automation-app-umber.vercel.app](https://automation-app-umber.vercel.app/)**
 
@@ -11,7 +11,7 @@ A full-stack AI consultant that helps small business owners identify and automat
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
 
-**Features:** Conversational AI via Groq, full user authentication with Supabase, persistent multi-session chat history, downloadable automation plans, protected routes via Next.js middleware, deployed on Vercel.
+**Features:** Conversational AI via Groq, business info modal on new chat, personalized PDF report generation with jsPDF, full user auth with Supabase, persistent multi-session chat history, forgot/reset password flow, protected routes via Next.js middleware, deployed on Vercel.
 
 **Run locally:** Clone the repo, run `npm install`, add your `GROQ_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`, then run `npm run dev`.
 
@@ -31,7 +31,8 @@ app/
     └── chat/
         └── route.ts      # Groq API integration
 lib/
-└── supabase.ts           # Supabase browser client
+├── supabase.ts           # Supabase browser client
+└── generatePDF.ts        # jsPDF personalized report generator
 middleware.ts             # Auth route protection
 ```
 
