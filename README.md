@@ -1,18 +1,8 @@
 # AutoConsult — AI Business Automation Consultant
 
-A full-stack AI-powered consultant that helps small business owners identify and automate their most repetitive manual tasks. Built with Next.js, TypeScript, Tailwind CSS, Groq API, and Supabase.
+A full-stack AI consultant that helps small business owners identify and automate repetitive tasks through natural conversation. Sign up, chat with the AI, and walk away with a downloadable custom automation plan.
 
 🔗 **[Try it live → automation-app-umber.vercel.app](https://automation-app-umber.vercel.app/)**
-
----
-
-## What it does
-
-AutoConsult lets business owners sign up, log in, and have a natural AI-driven conversation about their business. The AI asks follow-up questions, identifies repetitive tasks, and delivers a custom step-by-step automation plan they can download. All conversations are saved and accessible from a persistent chat history sidebar.
-
----
-
-## Tech Stack
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat&logo=nextdotjs&logoColor=white)
@@ -21,49 +11,12 @@ AutoConsult lets business owners sign up, log in, and have a natural AI-driven c
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
 
----
+**Features:** Conversational AI via Groq, user auth with Supabase, persistent chat history, multiple conversations, downloadable automation plans, protected routes, deployed on Vercel.
 
-## Features
+**Run locally:** Clone the repo, run `npm install`, add your `GROQ_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`, then run `npm run dev`.
 
-- Conversational AI powered by Groq (Llama 3.3) that asks natural follow-up questions
-- Full user authentication — sign up, login, logout, protected routes
-- Persistent conversation history saved to Supabase per user
-- Multiple chat sessions with the ability to create and delete conversations
-- Downloadable automation plan delivered at the end of each conversation
-- Interactive landing page with industry-specific plan previews
-- Clean minimal UI with dark navy sidebar matching landing page design
-- Serverless API routes with Next.js App Router
-
----
-
-## Run locally
-
-```bash
-git clone https://github.com/ShaheerHashmi04/automation-app.git
-cd automation-app
-npm install
+**Project Structure:**
 ```
-
-Create a `.env.local` file in the root:
-
-GROQ_API_KEY=your_groq_api_key
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-Get your free API keys at:
-- [console.groq.com](https://console.groq.com)
-- [supabase.com](https://supabase.com)
-
-```bash
-npm run dev
-```
-
-Open [localhost:3000](http://localhost:3000)
-
----
-
-## Project Structure
-
 app/
 ├── page.tsx              # Landing page
 ├── layout.tsx            # Root layout
@@ -71,14 +24,13 @@ app/
 │   └── login/
 │       └── page.tsx      # Login and signup page
 ├── chat/
-│   └── page.tsx          # Main chat interface with history sidebar
+│   └── page.tsx          # Chat interface with history sidebar
 └── api/
-└── chat/
-└── route.ts      # Groq API integration
+    └── chat/
+        └── route.ts      # Groq API integration
 lib/
 └── supabase.ts           # Supabase client
 middleware.ts             # Auth route protection
-
----
+```
 
 Built by [Shaheer Hashmi](https://github.com/ShaheerHashmi04)
