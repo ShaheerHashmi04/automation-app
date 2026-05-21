@@ -8,6 +8,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -19,7 +20,16 @@ export default function Login() {
     setError(null);
     setMessage(null);
 
-    if (isSignUp) {
+    if (isForgotPassword) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (error) {
+        setError(error.message);
+      } else {
+        setMessage("Check your email for a password reset link!");
+      }
+    } else if (isSignUp) {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(error.message);
@@ -55,10 +65,10 @@ export default function Login() {
       {/* Card */}
       <div className="bg-white rounded-2xl p-8 w-full max-w-sm">
         <h1 className="text-lg font-medium text-gray-900 mb-1">
-          {isSignUp ? "Create an account" : "Welcome back"}
+          {isForgotPassword ? "Reset your password" : isSignUp ? "Create an account" : "Welcome back"}
         </h1>
         <p className="text-xs text-gray-500 mb-6">
-          {isSignUp ? "Sign up to save your automation plans" : "Sign in to your account"}
+          {isForgotPassword ? "Enter your email and we'll send you a reset link" : isSignUp ? "Sign up to save your automation plans" : "Sign in to your account"}
         </p>
 
         <div className="flex flex-col gap-3">
@@ -73,17 +83,20 @@ export default function Login() {
               className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
             />
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="••••••••"
-              className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
-            />
-          </div>
+
+          {!isForgotPassword && (
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="••••••••"
+                className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
+              />
+            </div>
+          )}
 
           {error && (
             <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
@@ -101,19 +114,31 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-gray-900 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-700 disabled:opacity-50 transition-colors mt-1"
           >
-            {loading ? "Loading..." : isSignUp ? "Create account" : "Sign in"}
+            {loading ? "Loading..." : isForgotPassword ? "Send reset link" : isSignUp ? "Create account" : "Sign in"}
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 text-center mt-4">
-          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button
-            onClick={() => { setIsSignUp(!isSignUp); setError(null); setMessage(null); }}
-            className="text-gray-900 font-medium hover:underline"
-          >
-            {isSignUp ? "Sign in" : "Sign up"}
-          </button>
-        </p>
+        <div className="flex flex-col items-center gap-2 mt-4">
+          {!isForgotPassword && (
+            <p className="text-xs text-gray-500">
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
+                onClick={() => { setIsSignUp(!isSignUp); setError(null); setMessage(null); }}
+                className="text-gray-900 font-medium hover:underline"
+              >
+                {isSignUp ? "Sign in" : "Sign up"}
+              </button>
+            </p>
+          )}
+          {!isSignUp && (
+            <button
+              onClick={() => { setIsForgotPassword(!isForgotPassword); setError(null); setMessage(null); }}
+              className="text-xs text-gray-500 hover:text-gray-900 hover:underline transition-colors"
+            >
+              {isForgotPassword ? "Back to sign in" : "Forgot your password?"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
