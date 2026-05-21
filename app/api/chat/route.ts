@@ -30,7 +30,14 @@ Rules:
 - Don't number your questions or make it feel like an interview
 - Feel free to make small observations like "That sounds really time consuming" or "A lot of businesses struggle with that"
 - When you are ready to deliver the plan, write it between <automation> and </automation> tags
-- The plan should be specific to their exact tools and situation, not generic`;
+- The plan should be specific to their exact tools and situation, not generic
+
+IMPORTANT: When you write the automation plan, also include these hidden tags with extracted info:
+<business_name>The name or type of their business</business_name>
+<manual_task>The main manual task they want to automate in one sentence</manual_task>
+<tools>Comma separated list of tools they mentioned</tools>
+
+These tags will be used to personalize their PDF report.`;
 
 interface Message {
   role: "user" | "assistant";

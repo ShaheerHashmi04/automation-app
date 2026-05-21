@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { generatePDF } from "@/lib/generatePDF";
 
 interface Message {
   role: "user" | "assistant";
@@ -15,18 +16,28 @@ interface Conversation {
   updated_at: string;
 }
 
+interface BusinessInfo {
+  businessName: string;
+  industry: string;
+  teamSize: string;
+  role: string;
+}
+
 function extractAutomation(text: string): string | null {
   const match = text.match(/<automation>([\s\S]*?)<\/automation>/);
   return match ? match[1] : null;
 }
 
-function downloadPlan(text: string) {
-  const blob = new Blob([text], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "automation-plan.txt";
-  a.click();
+function extractTag(text: string, tag: string): string {
+  const match = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+  return match ? match[1].trim() : "";
+}
+
+function handleDownloadPDF(fullText: string, automation: string) {
+  const businessName = extractTag(fullText, "business_name") || "Your Business";
+  const manualTask = extractTag(fullText, "manual_task") || "Manual business task";
+  const tools = extractTag(fullText, "tools") || "Various tools";
+  generatePDF({ businessName, manualTask, tools, automationPlan: automation });
 }
 
 export default function Chat() {
@@ -36,6 +47,13 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingConversations, setLoadingConversations] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+    businessName: "",
+    industry: "",
+    teamSize: "",
+    role: "",
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -59,10 +77,10 @@ export default function Chat() {
       if (data.length > 0) {
         loadConversation(data[0].id);
       } else {
-        startNewChat();
+        setShowModal(true);
       }
     } else {
-      startNewChat();
+      setShowModal(true);
     }
     setLoadingConversations(false);
   };
@@ -85,44 +103,47 @@ export default function Chat() {
     }
   };
 
-  const startNewChat = async () => {
+  const handleModalSubmit = async () => {
+    if (!businessInfo.businessName || !businessInfo.industry) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase
       .from("conversations")
-      .insert({ user_id: user.id, title: "New conversation" })
+      .insert({ user_id: user.id, title: businessInfo.businessName })
       .select()
       .single();
 
     if (data) {
       setConversations((prev) => [data, ...prev]);
       setActiveConversationId(data.id);
-      setMessages([{
+
+      const greeting = `Hi! I'm ready to help ${businessInfo.businessName} automate their workflows. As a ${businessInfo.role} in the ${businessInfo.industry} industry with a team of ${businessInfo.teamSize}, what's the most repetitive manual task that's eating up your time?`;
+
+      const firstMessage: Message = { role: "assistant", content: greeting };
+      setMessages([firstMessage]);
+
+      await supabase.from("messages").insert({
+        conversation_id: data.id,
         role: "assistant",
-        content: "Hi! I'm your automation consultant. What does your business do?",
-      }]);
+        content: greeting,
+      });
     }
+
+    setShowModal(false);
+    setBusinessInfo({ businessName: "", industry: "", teamSize: "", role: "" });
   };
 
   const saveMessage = async (conversationId: string, role: string, content: string) => {
-    await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      role,
-      content,
-    });
+    await supabase.from("messages").insert({ conversation_id: conversationId, role, content });
   };
 
-  const updateConversationTitle = async (conversationId: string, firstUserMessage: string) => {
-    const title = firstUserMessage.length > 40
-      ? firstUserMessage.substring(0, 40) + "..."
-      : firstUserMessage;
-
+  const updateConversationTitle = async (conversationId: string, title: string) => {
     await supabase
       .from("conversations")
       .update({ title, updated_at: new Date().toISOString() })
       .eq("id", conversationId);
-
     setConversations((prev) =>
       prev.map((c) => c.id === conversationId ? { ...c, title } : c)
     );
@@ -132,12 +153,11 @@ export default function Chat() {
     await supabase.from("conversations").delete().eq("id", conversationId);
     const remaining = conversations.filter((c) => c.id !== conversationId);
     setConversations(remaining);
-
     if (activeConversationId === conversationId) {
       if (remaining.length > 0) {
         loadConversation(remaining[0].id);
       } else {
-        startNewChat();
+        setShowModal(true);
       }
     }
   };
@@ -160,7 +180,7 @@ export default function Chat() {
 
     const userMessageCount = newMessages.filter((m) => m.role === "user").length;
     if (userMessageCount === 1) {
-      await updateConversationTitle(activeConversationId, userMessage);
+      await updateConversationTitle(activeConversationId, userMessage.length > 40 ? userMessage.substring(0, 40) + "..." : userMessage);
     }
 
     const response = await fetch("/api/chat", {
@@ -203,10 +223,97 @@ export default function Chat() {
   return (
     <div className="flex h-screen bg-white text-gray-900 font-sans">
 
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-medium text-gray-900">Tell us about your business</h2>
+            <button
+              onClick={() => setShowModal(false)}
+              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-6">This helps us personalize your automation plan</p>
+
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">Business name <span className="text-red-400">*</span></label>
+                <input
+                  type="text"
+                  value={businessInfo.businessName}
+                  onChange={(e) => setBusinessInfo({ ...businessInfo, businessName: e.target.value })}
+                  placeholder="e.g. Joe's Bakery"
+                  className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">Industry <span className="text-red-400">*</span></label>
+                <select
+                  value={businessInfo.industry}
+                  onChange={(e) => setBusinessInfo({ ...businessInfo, industry: e.target.value })}
+                  className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                >
+                  <option value="">Select your industry</option>
+                  <option>Bakery</option>
+                  <option>E-commerce</option>
+                  <option>Freelance</option>
+                  <option>Restaurant</option>
+                  <option>Agency</option>
+                  <option>Law firm</option>
+                  <option>Real estate</option>
+                  <option>Fitness studio</option>
+                  <option>Consulting</option>
+                  <option>Clinic</option>
+                  <option>Photography</option>
+                  <option>Accounting</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">Your role</label>
+                <input
+                  type="text"
+                  value={businessInfo.role}
+                  onChange={(e) => setBusinessInfo({ ...businessInfo, role: e.target.value })}
+                  placeholder="e.g. Owner, Manager, CEO"
+                  className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">Team size</label>
+                <select
+                  value={businessInfo.teamSize}
+                  onChange={(e) => setBusinessInfo({ ...businessInfo, teamSize: e.target.value })}
+                  className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                >
+                  <option value="">Select team size</option>
+                  <option>Just me</option>
+                  <option>2-5 people</option>
+                  <option>6-10 people</option>
+                  <option>11-25 people</option>
+                  <option>25+ people</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleModalSubmit}
+              disabled={!businessInfo.businessName || !businessInfo.industry}
+              className="w-full mt-6 bg-gray-900 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-700 disabled:opacity-40 transition-colors"
+            >
+              Start conversation
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className="w-64 flex flex-col bg-gray-900 shrink-0">
-
-        {/* Logo */}
         <div className="px-4 py-4 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2 hover:opacity-70 transition-opacity">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -216,10 +323,9 @@ export default function Chat() {
           </Link>
         </div>
 
-        {/* New chat button */}
         <div className="px-3 py-3">
           <button
-            onClick={startNewChat}
+            onClick={() => setShowModal(true)}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white text-gray-900 text-xs font-medium hover:bg-gray-100 transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -229,7 +335,6 @@ export default function Chat() {
           </button>
         </div>
 
-        {/* Conversations list */}
         <div className="flex-1 overflow-y-auto px-3 pb-3">
           {loadingConversations ? (
             <p className="text-xs text-gray-500 px-2 py-4 text-center">Loading...</p>
@@ -266,7 +371,6 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-3 py-3 border-t border-white/10">
           <button
             onClick={handleLogout}
@@ -279,8 +383,6 @@ export default function Chat() {
 
       {/* Chat area */}
       <div className="flex flex-col flex-1 overflow-hidden">
-
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-4">
             <Link
@@ -303,11 +405,15 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
           {messages.map((msg, i) => {
             const automation = msg.role === "assistant" ? extractAutomation(msg.content) : null;
-            const displayText = msg.content.replace(/<automation>[\s\S]*?<\/automation>/, "").trim();
+            const displayText = msg.content
+              .replace(/<automation>[\s\S]*?<\/automation>/, "")
+              .replace(/<business_name>[\s\S]*?<\/business_name>/, "")
+              .replace(/<manual_task>[\s\S]*?<\/manual_task>/, "")
+              .replace(/<tools>[\s\S]*?<\/tools>/, "")
+              .trim();
 
             return (
               <div key={i} className={`flex gap-2.5 items-start max-w-[80%] ${msg.role === "user" ? "self-end flex-row-reverse" : ""}`}>
@@ -316,7 +422,6 @@ export default function Chat() {
                 `}>
                   {msg.role === "assistant" ? "AI" : "U"}
                 </div>
-
                 <div>
                   <div className={`px-3.5 py-2.5 text-sm leading-relaxed
                     ${msg.role === "assistant"
@@ -337,13 +442,13 @@ export default function Chat() {
                       </p>
                       <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{automation}</p>
                       <button
-                        onClick={() => downloadPlan(automation)}
+                        onClick={() => handleDownloadPDF(msg.content, automation)}
                         className="mt-2.5 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
                       >
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                           <path d="M6 1V8M6 8L3.5 5.5M6 8L8.5 5.5M2 10H10" stroke="#15803d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        Download plan
+                        Download PDF
                       </button>
                     </div>
                   )}
@@ -367,7 +472,6 @@ export default function Chat() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
           <input
             className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all placeholder-gray-400"
