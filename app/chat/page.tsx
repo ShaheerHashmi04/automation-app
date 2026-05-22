@@ -76,7 +76,7 @@ export default function Chat() {
     const handleTouchEnd = (e: TouchEvent) => {
       touchEndX.current = e.changedTouches[0].clientX;
       const diff = touchEndX.current - touchStartX.current;
-      if (diff > 60 && touchStartX.current < 40) setSidebarOpen(true);
+      if (diff > 50 && touchStartX.current < 80) setSidebarOpen(true);
       if (diff < -60) setSidebarOpen(false);
     };
     window.addEventListener("touchstart", handleTouchStart);
@@ -247,7 +247,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-screen bg-white text-gray-900 font-sans overflow-hidden">
+    <div className="flex bg-white text-gray-900 font-sans overflow-hidden" style={{ height: '100dvh' }}>
 
       {/* Modal */}
       {showModal && (
@@ -406,7 +406,7 @@ export default function Chat() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                    className="opacity-0 group-hover:opacity-100 ml-2 p-1 rounded-lg hover:bg-red-500/20 hover:text-red-400 text-gray-500 transition-all shrink-0"
+                    className="md:opacity-0 md:group-hover:opacity-100 ml-2 p-1 rounded-lg hover:bg-red-500/20 hover:text-red-400 text-gray-400 transition-all shrink-0"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
