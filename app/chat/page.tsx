@@ -48,6 +48,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
     businessName: "",
     industry: "",
@@ -55,6 +56,8 @@ export default function Chat() {
     role: "",
   });
   const bottomRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
   const supabase = createClient();
 
   useEffect(() => {
@@ -64,6 +67,25 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Swipe gesture handling
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX.current = e.changedTouches[0].clientX;
+      const diff = touchEndX.current - touchStartX.current;
+      if (diff > 60 && touchStartX.current < 40) setSidebarOpen(true);
+      if (diff < -60) setSidebarOpen(false);
+    };
+    window.addEventListener("touchstart", handleTouchStart);
+    window.addEventListener("touchend", handleTouchEnd);
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
 
   const loadConversations = async () => {
     setLoadingConversations(true);
@@ -87,6 +109,7 @@ export default function Chat() {
 
   const loadConversation = async (conversationId: string) => {
     setActiveConversationId(conversationId);
+    setSidebarOpen(false);
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -180,7 +203,10 @@ export default function Chat() {
 
     const userMessageCount = newMessages.filter((m) => m.role === "user").length;
     if (userMessageCount === 1) {
-      await updateConversationTitle(activeConversationId, userMessage.length > 40 ? userMessage.substring(0, 40) + "..." : userMessage);
+      await updateConversationTitle(
+        activeConversationId,
+        userMessage.length > 40 ? userMessage.substring(0, 40) + "..." : userMessage
+      );
     }
 
     const response = await fetch("/api/chat", {
@@ -221,24 +247,24 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-screen bg-white text-gray-900 font-sans">
+    <div className="flex h-screen bg-white text-gray-900 font-sans overflow-hidden">
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl">
+          <div className="bg-white rounded-2xl p-6 md:p-8 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-medium text-gray-900">Tell us about your business</h2>
-            <button
-              onClick={() => setShowModal(false)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mb-6">This helps us personalize your automation plan</p>
+              <h2 className="text-lg font-medium text-gray-900">Tell us about your business</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-6">This helps us personalize your automation plan</p>
 
             <div className="flex flex-col gap-4">
               <div>
@@ -312,20 +338,41 @@ export default function Chat() {
         </div>
       )}
 
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 flex flex-col bg-gray-900 shrink-0">
-        <div className="px-4 py-4 border-b border-white/10">
+      <div className={`
+        fixed md:relative z-40 h-full flex flex-col bg-gray-900 shrink-0
+        transition-transform duration-300 ease-in-out
+        w-72 md:w-64
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}>
+        <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-70 transition-opacity">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M9 1L11.5 6.5H17L12.5 10L14.5 16L9 12.5L3.5 16L5.5 10L1 6.5H6.5L9 1Z" fill="white" />
             </svg>
             <span className="text-sm font-medium text-white">AutoConsult</span>
           </Link>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         <div className="px-3 py-3">
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { setShowModal(true); setSidebarOpen(false); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white text-gray-900 text-xs font-medium hover:bg-gray-100 transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -382,30 +429,45 @@ export default function Chat() {
       </div>
 
       {/* Chat area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-          <div className="flex items-center gap-4">
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            {/* Hamburger — mobile only */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M2 4H16M2 9H16M2 14H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* Back button — desktop only */}
             <Link
               href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-900 bg-gray-900 text-sm text-white hover:bg-gray-700 hover:border-gray-700 transition-all"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-900 bg-gray-900 text-sm text-white hover:bg-gray-700 hover:border-gray-700 transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M13 7H1M1 7L6 2M1 7L6 12" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Back to home
             </Link>
+
             <div>
               <p className="text-sm font-medium text-gray-800">Automation consultant</p>
-              <p className="text-xs text-gray-400 mt-0.5">AI powered business automation</p>
+              <p className="text-xs text-gray-400 hidden md:block">AI powered business automation</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-100">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            Active
+            <span className="hidden sm:inline">Active</span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-4">
           {messages.map((msg, i) => {
             const automation = msg.role === "assistant" ? extractAutomation(msg.content) : null;
             const displayText = msg.content
@@ -416,7 +478,7 @@ export default function Chat() {
               .trim();
 
             return (
-              <div key={i} className={`flex gap-2.5 items-start max-w-[80%] ${msg.role === "user" ? "self-end flex-row-reverse" : ""}`}>
+              <div key={i} className={`flex gap-2.5 items-start max-w-[85%] md:max-w-[80%] ${msg.role === "user" ? "self-end flex-row-reverse" : ""}`}>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium shrink-0
                   ${msg.role === "assistant" ? "bg-gray-100 text-gray-500 border border-gray-200" : "bg-gray-900 text-white"}
                 `}>
@@ -472,7 +534,8 @@ export default function Chat() {
           <div ref={bottomRef} />
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+        {/* Input */}
+        <div className="px-4 py-4 border-t border-gray-100 flex gap-3">
           <input
             className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all placeholder-gray-400"
             placeholder="Type your message..."
@@ -485,7 +548,7 @@ export default function Chat() {
             disabled={loading}
             className="px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 disabled:opacity-40 transition-colors flex items-center gap-2"
           >
-            Send
+            <span className="hidden sm:inline">Send</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M1 6H11M11 6L7 2M11 6L7 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
