@@ -68,7 +68,7 @@ export default function Login() {
           {isForgotPassword ? "Reset your password" : isSignUp ? "Create an account" : "Welcome back"}
         </h1>
         <p className="text-xs text-gray-500 mb-6">
-          {isForgotPassword ? "Enter your email and we'll send you a reset link" : isSignUp ? "Sign up to save your automation plans" : "Sign in to your account"}
+          {isForgotPassword ? "Enter your email and we'll send you a reset link" : isSignUp ? "Create an account to save and revisit your automation plans" : "Welcome back — your automation plans are waiting"}
         </p>
 
         <div className="flex flex-col gap-3">

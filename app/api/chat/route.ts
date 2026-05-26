@@ -1,3 +1,8 @@
+// AutoConsult AI Engine
+// Handles multi-turn conversation context, structured plan extraction, and PDF metadata generation
+// Model: Groq Llama 3.3-70B
+
+
 import Groq from "groq-sdk";
 import { NextRequest } from "next/server";
 

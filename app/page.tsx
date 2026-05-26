@@ -147,7 +147,7 @@ export default function Home() {
             Automate your business in minutes
           </h1>
           <p className="text-lg text-gray-400 max-w-xl leading-relaxed mb-8">
-            Tell our AI about your business and walk away with a custom step-by-step automation plan — no technical knowledge required.
+            Describe your business to our AI and receive a personalized, step-by-step automation plan tailored to your tools and workflow — no technical knowledge required.
           </p>
           <Link
             href={isLoggedIn ? "/chat" : "/auth/login"}
