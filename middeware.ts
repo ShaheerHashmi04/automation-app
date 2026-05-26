@@ -1,3 +1,5 @@
+// Route protection middleware — redirects unauthenticated users away from /chat
+
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
